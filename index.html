@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Combat Aircraft & Fighter Jet Cost Index</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #6366f1;
+            --border-color: #334155;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: #ffffff;
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+        }
+
+        .disclaimer {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 15px auto 0 auto;
+            background: #334155;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        #searchBar {
+            padding: 12px 20px;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: #0f172a;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 14px;
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .stats-banner {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .jet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .jet-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .jet-card:hover {
+            transform: translateY(-2px);
+            border-color: #475569;
+        }
+
+        .jet-name {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .jet-country {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .jet-price {
+            font-size: 1.7rem;
+            color: #22c55e;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+
+        .jet-meta {
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            color: #cbd5e1;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            align-items: center;
+        }
+
+        .badge {
+            background: #475569;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Global Combat Aircraft Index</h1>
+        <p>A comprehensive tracking database of historical, legacy, and cutting-edge fighter platforms.</p>
+        <div class="disclaimer">
+            <strong>Database Tracking Context:</strong> Prices reflect historic or modern standard flyaway unit production costs. Historical values (WWII / Cold War) match their original production era valuation unless specified.
+        </div>
+    </header>
+
+    <div class="controls">
+        <input type="text" id="searchBar" placeholder="Search by aircraft name, country, or specific keywords..." onkeyup="filterJets()">
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterCategory('all', this)">All Platforms (<span id="count-all">0</span>)</button>
+            <button class="filter-btn" onclick="filterCategory('Modern Stealth', this)">5th Generation Stealth</button>
+            <button class="filter-btn" onclick="filterCategory('4th / 4.5 Gen', this)">4th & 4.5 Generation</button>
+            <button class="filter-btn" onclick="filterCategory('Cold War Jet', this)">Cold War Legacy Jets</button>
+            <button class="filter-btn" onclick="filterCategory('WWII Prop', this)">WWII Propellor Era</button>
+        </div>
+    </div>
+
+    <div class="stats-banner" id="statsBanner"></div>
+
+    <div class="jet-grid" id="jetGrid"></div>
+</div>
+
+<script>
+    // Master database containing 50 prominent worldwide aircraft entries
+    const jetDatabase = [
+        // --- 5th GEN STEALTH ---
+        { name: "Lockheed Martin F-22 Raptor", price: "$143,000,000", country: "USA", gen: "Modern Stealth", status: "Production Capped" },
+        { name: "Lockheed Martin F-35A Lightning II", price: "$82,500,000", country: "USA", gen: "Modern Stealth", status: "Active Production" },
+        { name: "Lockheed Martin F-35B (STOVL)", price: "$109,000,000", country: "USA", gen: "Modern Stealth", status: "Active Production" },
+        { name: "Lockheed Martin F-35C (Carrier)", price: "$102,100,000", country: "USA", gen: "Modern Stealth", status: "Active Production" },
+        { name: "Chengdu J-20 (Mighty Dragon)", price: "$110,000,000", country: "China", gen: "Modern Stealth", status: "Active Production" },
+        { name: "Sukhoi Su-57 Felon", price: "$50,000,000", country: "Russia", gen: "Modern Stealth", status: "Low-Rate Production" },
+        { name: "Shenyang J-31 / FC-31 Gyrfalcon", price: "$70,000,000", country: "China", gen: "Modern Stealth", status: "In Development" },
+        { name: "KF-21 Boramae", price: "$80,000,000", country: "South Korea", gen: "Modern Stealth", status: "Active Production" },
+
+        // --- 4th / 4.5 GEN ---
+        { name: "Eurofighter Typhoon", price: "$124,000,000", country: "Europe (Consortium)", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Dassault Rafale C", price: "$115,000,000", country: "France", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Boeing F-15EX Eagle II", price: "$97,000,000", country: "USA", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Sukhoi Su-35 Flanker-E", price: "$85,000,000", country: "Russia", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Saab JAS 39E/F Gripen", price: "$85,000,000", country: "Sweden", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Boeing F/A-18E/F Super Hornet", price: "$65,000,000", country: "USA", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "General Dynamics F-16V Block 70", price: "$63,000,000", country: "USA", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Sukhoi Su-30SM Flanker-H", price: "$40,000,000", country: "Russia", gen: "4th / 4.5 Gen", status: "Operational" },
+        { name: "Chengdu J-10C Firebird", price: "$45,000,000", country: "China", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "CAC/PAC JF-17 Thunder Block III", price: "$25,000,000", country: "China / Pakistan", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "HAL Tejas Mark 1A", price: "$42,000,000", country: "India", gen: "4th / 4.5 Gen", status: "Active Production" },
+        { name: "Mitsubishi F-2", price: "$127,000,000", country: "Japan", gen: "4th / 4.5 Gen", status: "Operational" },
+        { name: "McDonnell Douglas F-15C Eagle", price: "$29,900,000", country: "USA", gen: "4th / 4.5 Gen", status: "Legacy Fleet" },
+        { name: "Mikoyan MiG-35 Fulcrum-F", price: "$30,000,000", country: "Russia", gen: "4th / 4.5 Gen", status: "Low-Rate Production" },
+        { name: "AIDC F-CK-1 Ching-kuo", price: "$30,000,000", country: "Taiwan", gen: "4th / 4.5 Gen", status: "Operational" },
+        { name: "Panavia Tornado ADV", price: "$38,000,000", country: "UK / Germany / Italy", gen: "4th / 4.5 Gen", status: "Retired" },
+        { name: "Mikoyan MiG-29 Fulcrum", price: "$23,800,000", country: "USSR / Russia", gen: "4th / 4.5 Gen", status: "Operational" },
+        { name: "Sukhoi Su-27 Flanker-B", price: "$30,000,000", country: "USSR", gen: "4th / 4.5 Gen", status: "Operational" },
+
+        // --- COLD WAR LEGACY JETS ---
+        { name: "Grumman F-14 Tomcat", price: "$38,000,000", country: "USA", gen: "Cold War Jet", status: "Retired" },
+        { name: "McDonnell Douglas F-4 Phantom II", price: "$2,400,000", country: "USA", gen: "Cold War Jet", status: "Retired (1960 Value)" },
+        { name: "Mikoyan-Gurevich MiG-21 Fishbed", price: "$2,900,000", country: "USSR", gen: "Cold War Jet", status: "Retired (Mass Produced)" },
+        { name: "Mikoyan-Gurevich MiG-25 Foxbat", price: "$5,500,000", country: "USSR", gen: "Cold War Jet", status: "Retired" },
+        { name: "Mikoyan MiG-31 Foxhound", price: "$33,000,000", country: "USSR / Russia", gen: "Cold War Jet", status: "Operational" },
+        { name: "English Electric Lightning", price: "$1,600,000", country: "UK", gen: "Cold War Jet", status: "Retired" },
+        { name: "Saab 35 Draken", price: "$1,200,000", country: "Sweden", gen: "Cold War Jet", status: "Retired" },
+        { name: "Saab 37 Viggen", price: "$3,100,000", country: "Sweden", gen: "Cold War Jet", status: "Retired" },
+        { name: "Dassault Mirage III", price: "$3,000,000", country: "France", gen: "Cold War Jet", status: "Retired" },
+        { name: "Dassault Mirage 2000", price: "$23,000,000", country: "France", gen: "Cold War Jet", status: "Operational" },
+        { name: "North American F-86 Sabre", price: "$211,000", country: "USA", gen: "Cold War Jet", status: "Retired (1950 Value)" },
+        { name: "Mikoyan-Gurevich MiG-15 Fagot", price: "$180,000", country: "USSR", gen: "Cold War Jet", status: "Retired (1949 Value)" },
+        { name: "Lockheed F-104 Starfighter", price: "$1,420,000", country: "USA", gen: "Cold War Jet", status: "Retired" },
+        { name: "Republic F-105 Thunderchief", price: "$2,200,000", country: "USA", gen: "Cold War Jet", status: "Retired" },
+        { name: "Convair F-106 Delta Dart", price: "$4,700,000", country: "USA", gen: "Cold War Jet", status: "Retired" },
+        { name: "Hawker Hunter", price: "$140,000", country: "UK", gen: "Cold War Jet", status: "Retired (1953 Value)" },
+
+        // --- WORLD WAR II PROPELLER ---
+        { name: "North American P-51D Mustang", price: "$50,000", country: "USA", gen: "WWII Prop", status: "Retired (1944 Value)" },
+        { name: "Supermarine Spitfire Mk IX", price: "$60,000", country: "UK", gen: "WWII Prop", status: "Retired (1943 Value)" },
+        { name: "Messerschmitt Bf 109G", price: "$42,000", country: "Germany", gen: "WWII Prop", status: "Retired (1942 Value)" },
+        { name: "Focke-Wulf Fw 190 A-8", price: "$55,000", country: "Germany", gen: "WWII Prop", status: "Retired (1944 Value)" },
+        { name: "Mitsubishi A6M Zero (Type 0)", price: "$40,000", country: "Japan", gen: "WWII Prop", status: "Retired (1941 Value)" },
+        { name: "Vought F4U-1D Corsair", price: "$105,000", country: "USA", gen: "WWII Prop", status: "Retired (1945 Value)" },
+        { name: "Grumman F6F Hellcat", price: "$35,000", country: "USA", gen: "WWII Prop", status: "Retired (1943 Value)" },
+        { name: "Yakovlev Yak-3", price: "$30,000", country: "USSR", gen: "WWII Prop", status: "Retired (1944 Value)" }
+    ];
+
+    let currentCategory = 'all';
+
+    function displayJets(data) {
+        const grid = document.getElementById('jetGrid');
+        grid.innerHTML = '';
+        
+        if(data.length === 0) {
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8;">No matching aircraft discovered in data array.</p>';
+            return;
+        }
+
+        data.forEach(jet => {
+            const card = document.createElement('div');
+            card.className = 'jet-card';
+            card.innerHTML = `
+                <div>
+                    <div class="jet-name">${jet.name}</div>
+                    <div class="jet-country">${jet.country}</div>
+                </div>
+                <div>
+                    <div class="jet-price">${jet.price}</div>
+                    <div class="jet-meta">
+                        <span>${jet.gen}</span>
+                        <span class="badge">${jet.status}</span>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        
+        // Update live visible count display
+        document.getElementById('statsBanner').innerText = `Showing ${data.length} aircraft platforms based on selection parameters.`;
+    }
+
+    function filterJets() {
+        const searchVal = document.getElementById('searchBar').value.toLowerCase();
+        
+        const filtered = jetDatabase.filter(jet => {
+            const matchesSearch = jet.name.toLowerCase().includes(searchVal) || 
+                                  jet.country.toLowerCase().includes(searchVal) || 
+                                  jet.gen.toLowerCase().includes(searchVal);
+            const matchesCategory = currentCategory === 'all' || jet.gen === currentCategory;
+            return matchesSearch && matchesCategory;
+        });
+        
+        displayJets(filtered);
+    }
+
+    function filterCategory(category, button) {
+        currentCategory = category;
+        
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        filterJets();
+    }
+
+    // Set layout counts on load
+    document.getElementById('count-all').innerText = jetDatabase.length;
+    displayJets(jetDatabase);
+</script>
+
+</body>
+</html>
